@@ -1,5 +1,24 @@
-# Use the English version of the base image
-FROM justsong/one-api-en AS builder2
+# Use the English version of the one-api image
+FROM justsong/one-api-en AS builder
+
+WORKDIR /web
+COPY ./VERSION .
+COPY ./web .
+
+WORKDIR /web/default
+RUN npm install
+RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build
+
+WORKDIR /web/berry
+RUN npm install
+RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build
+
+WORKDIR /web/air
+RUN npm install
+RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build
+
+# Golang build stage
+FROM golang:alpine AS builder2
 
 RUN apk add --no-cache g++
 
@@ -11,9 +30,10 @@ WORKDIR /build
 ADD go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=builder /web/build ./web/build
+COPY --from=builder /web/build ./web/build  # Ensure that this path exists in the builder stage
 RUN go build -trimpath -ldflags "-s -w -X 'github.com/songquanpeng/one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o one-api
 
+# Final stage
 FROM alpine
 
 RUN apk update \
@@ -21,7 +41,6 @@ RUN apk update \
     && apk add --no-cache ca-certificates tzdata \
     && update-ca-certificates 2>/dev/null || true
 
-# Copy the English binary
 COPY --from=builder2 /build/one-api /
 EXPOSE 3000
 WORKDIR /data
