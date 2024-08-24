@@ -1,5 +1,4 @@
-# Use the English version of the one-api image
-FROM justsong/one-api-en AS builder
+FROM --platform=$BUILDPLATFORM node:16 AS builder
 
 WORKDIR /web
 COPY ./VERSION .
@@ -17,7 +16,6 @@ WORKDIR /web/air
 RUN npm install
 RUN DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat VERSION) npm run build
 
-# Golang build stage
 FROM golang:alpine AS builder2
 
 RUN apk add --no-cache g++
@@ -30,10 +28,9 @@ WORKDIR /build
 ADD go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=builder /web/build ./web/build  # Ensure that this path exists in the builder stage
+COPY --from=builder /web/build ./web/build
 RUN go build -trimpath -ldflags "-s -w -X 'github.com/songquanpeng/one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o one-api
 
-# Final stage
 FROM alpine
 
 RUN apk update \
