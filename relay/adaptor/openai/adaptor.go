@@ -65,8 +65,8 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *me
 	}
 	req.Header.Set("Authorization", "Bearer "+meta.APIKey)
 	if meta.ChannelType == channeltype.OpenRouter {
-		req.Header.Set("HTTP-Referer", "https://github.com/songquanpeng/one-api")
-		req.Header.Set("X-Title", "One API")
+		req.Header.Set("HTTP-Referer", "https://gpt4free.io/")
+		req.Header.Set("X-Title", "GPT4Free")
 	}
 	return nil
 }
